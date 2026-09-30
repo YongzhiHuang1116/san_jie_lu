@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>修仙世界 · 三界录</title>
+<style>
+  :root{
+    --ink:#2b2118; --ink2:#5a4a36; --paper:#f3e9d2; --paper2:#e9dcbf;
+    --seal:#9e2b25; --gold:#9c7a2e; --line:#c9b48a; --good:#2f6b3a; --bad:#9e2b25;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Kaiti","STKaiti","楷体","Songti SC",serif;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(255,255,255,.5), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(180,150,100,.25), transparent 50%),
+      var(--paper);
+    color:var(--ink); line-height:1.6;}
+  #app{max-width:1180px;margin:0 auto;padding:14px;}
+  h1,h2,h3{font-weight:700;letter-spacing:2px;margin:.2em 0}
+  .seal{color:var(--seal)}
+  .frame{border:2px solid var(--line);border-radius:8px;background:rgba(255,255,255,.35);
+    box-shadow:0 2px 10px rgba(120,90,40,.18) inset, 0 1px 0 #fff;}
+  /* 创建界面 */
+  #create{padding:22px}
+  #create .row{display:flex;flex-wrap:wrap;gap:10px 18px;margin:10px 0}
+  #create label{display:flex;flex-direction:column;font-size:14px;color:var(--ink2)}
+  #create input,#create select{padding:6px 8px;border:1px solid var(--line);border-radius:5px;
+    background:#fff8ec;font-family:inherit;font-size:15px;color:var(--ink);margin-top:3px}
+  .sectitle{border-left:5px solid var(--seal);padding-left:10px;margin-top:18px;color:var(--seal)}
+  .btn{cursor:pointer;border:1px solid var(--seal);background:var(--seal);color:#fff8ec;
+    padding:8px 16px;border-radius:6px;font-family:inherit;font-size:15px;letter-spacing:1px;
+    transition:.15s; box-shadow:0 2px 0 #6f1d19}
+  .btn:hover{filter:brightness(1.08)}
+  .btn:active{transform:translateY(2px);box-shadow:none}
+  .btn.ghost{background:transparent;color:var(--seal)}
+  .btn.sm{padding:5px 10px;font-size:13px}
+  /* 游戏界面 */
+  #game{display:none;grid-template-columns:300px 1fr 250px;gap:12px}
+  @media(max-width:1000px){#game{grid-template-columns:1fr}}
+  .panel{padding:12px;max-height:82vh;overflow:auto}
+  #topbar{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+    padding:10px 14px;font-size:14px}
+  #topbar b{color:var(--seal)}
+  .stat-grid{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;font-size:13px}
+  .bar{height:9px;background:#d8c7a0;border-radius:5px;overflow:hidden;margin:2px 0 6px}
+  .bar>i{display:block;height:100%}
+  .hp>i{background:linear-gradient(90deg,#c0392b,#e74c3c)}
+  .mp>i{background:linear-gradient(90deg,#2471a3,#5dade2)}
+  .en>i{background:linear-gradient(90deg,#b7950b,#f1c40f)}
+  .sh>i{background:linear-gradient(90deg,#6c3483,#bb8fce)}
+  #log{height:52vh;overflow:auto;padding:12px;font-size:15px}
+  #log .line{margin:0 0 8px;padding-left:10px;border-left:3px solid var(--line)}
+  #log .ev{color:var(--seal);border-color:var(--seal)}
+  #log .good{color:var(--good);border-color:var(--good)}
+  #log .bad{color:var(--bad);border-color:var(--bad)}
+  #log .sys{color:var(--ink2);font-style:italic;border-color:#d8c7a0}
+  .choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .free{display:flex;gap:8px;margin-top:10px}
+  .free input{flex:1;padding:8px;border:1px solid var(--line);border-radius:6px;
+    background:#fff8ec;font-family:inherit;font-size:14px}
+  .mapbtn{display:block;width:100%;text-align:left;margin:4px 0;cursor:pointer;
+    border:1px solid var(--line);background:rgba(255,255,255,.4);padding:6px 9px;border-radius:5px;
+    font-family:inherit;font-size:13px;color:var(--ink)}
+  .mapbtn:hover{background:#fff3dc}
+  .mapbtn.cur{background:var(--seal);color:#fff8ec;border-color:var(--seal)}
+  .bag{font-size:12px;max-height:30vh;overflow:auto}
+  .bag div{padding:2px 0;border-bottom:1px dashed var(--line)}
+  .small{font-size:12px;color:var(--ink2)}
+  .tag{display:inline-block;background:var(--gold);color:#fff;font-size:11px;padding:1px 6px;border-radius:3px;margin-right:4px}
+  .tag.r{background:var(--seal)}
+  .modal{position:fixed;inset:0;background:rgba(40,30,20,.55);display:none;align-items:center;justify-content:center;z-index:50}
+  .modal.show{display:flex}
+  .modal .box{width:min(640px,92vw);max-height:88vh;overflow:auto;padding:18px;background:var(--paper);border:2px solid var(--seal);border-radius:10px}
+  .shopitem{display:flex;justify-content:space-between;align-items:center;gap:8px;
+    padding:6px;border-bottom:1px dashed var(--line);font-size:14px}
+  .center{text-align:center}
+  .mtip{color:var(--seal);font-size:13px;margin:6px 0}
+  .winbig{font-size:22px;color:var(--seal);text-align:center;margin:10px 0}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 角色创建 ============ -->
+  <div id="create" class="frame">
+    <h1 class="center">✦ 修仙世界 · 三界录 ✦</h1>
+    <p class="center small" id="verLine"></p>
+
+    <div class="sectitle">✦ 开局模式</div>
+    <div class="row">
+      <button class="btn sm" id="mDetail" onclick="selectMode('detail')">🖋 详细创建（自选天赋·灵根·职业）</button>
+      <button class="btn sm ghost" id="mQuick" onclick="selectMode('quick')">🎲 快速开局（仅填姓名性别，其余随机）</button>
+    </div>
+
+    <div class="sectitle">① 基础信息</div>
+    <div class="row">
+      <label>姓名<input id="c_name" value="王狗儿" maxlength="8"></label>
+      <label>性别<select id="c_sex"><option>男</option><option>女</option></select></label>
+    </div>
+
+    <div id="detailFields">
+      <div class="row">
+        <label>年龄<input id="c_age" type="number" value="18" min="8" max="80"></label>
+      </div>
+
+      <div class="sectitle">② 出身 / 势力</div>
+      <div class="row">
+        <label>身份（决定初始资源与剧情起点）
+          <select id="c_origin">
+            <option value="宗门弟子">宗门弟子（上三宗/下三宗）</option>
+            <option value="世家子弟">修仙世家子弟</option>
+            <option value="散修">散修（无门无派）</option>
+            <option value="凡人平民">凡人平民</option>
+            <option value="妖修">妖修（妖界出身）</option>
+            <option value="魔修">魔修（魔界出身）</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="sectitle">③ 修行资质</div>
+      <div class="row">
+        <label>灵根属性
+          <select id="c_root">
+            <option>金</option><option>木</option><option>水</option><option>火</option>
+            <option>土</option><option>风</option><option>雷</option><option>光</option>
+            <option>暗</option><option>杂灵根（多属性）</option>
+          </select>
+        </label>
+        <label>灵根品级
+          <select id="c_rootq">
+            <option value="天灵根">天灵根（单属性·修炼最快）</option>
+            <option value="双灵根">双灵根</option>
+            <option value="三灵根">三灵根</option>
+            <option value="四灵根">四灵根</option>
+            <option value="五灵根">五灵根（五行俱全）</option>
+          </select>
+        </label>
+        <label>主修职业
+          <select id="c_prof">
+            <option>剑修</option><option>法修</option><option>体修</option><option>符修</option>
+            <option>阵修</option><option>丹修</option><option>药修</option><option>蛊修</option>
+            <option>器修</option><option>妖修</option><option>魔修</option>
+          </select>
+        </label>
+      </div>
+      <p class="mtip small">提示：天灵根→根骨/悟性更高；杂灵根→福缘更高但修炼慢。职业决定战斗风格，详见游戏内说明。</p>
+    </div>
+    <div class="center" style="margin-top:10px">
+      <button class="btn" onclick="startGame()">✦ 确认入世，开始游戏 ✦</button>
+    </div>
+  </div>
+
+  <!-- ============ 游戏主界面 ============ -->
+  <div id="game">
+    <div id="topbar" class="frame">
+      <span>⏳ <b id="t_time"></b></span>
+      <span>📍 <b id="t_loc"></b></span>
+      <span>🌤 <b id="t_weather"></b></span>
+      <span id="t_realm" class="tag r"></span>
+      <span style="flex:1"></span>
+      <button class="btn sm ghost" onclick="saveGame()">存档</button>
+      <button class="btn sm ghost" onclick="loadGame()">读档</button>
+      <button class="btn sm ghost" onclick="openHelp()">玩法</button>
+    </div>
+
+    <!-- 左：状态 -->
+    <div class="panel frame" id="statusPanel"></div>
+
+    <!-- 中：剧情/日志 -->
+    <div class="frame" style="display:flex;flex-direction:column">
+      <div id="log"></div>
+      <div class="choices" id="choices"></div>
+      <div class="free">
+        <input id="freeInput" placeholder="自由行动，例如：修炼 / 前往长安城 / 采药 / 出手 / 逃跑 / 使用疗伤丹" onkeydown="if(event.key==='Enter')sendFree()">
+        <button class="btn" onclick="sendFree()">行动</button>
+      </div>
+    </div>
+
+    <!-- 右：地图 + 背包 -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="panel frame">
+        <h3 class="seal">🗺 三界舆图</h3>
+        <div id="map"></div>
+      </div>
+      <div class="panel frame">
+        <h3 class="seal">🎒 行囊</h3>
+        <div class="bag" id="bag"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 商店/模态 -->
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+
+<script>
+/* ===================== 世界观数据（源自设定集） ===================== */
+const REALMS = [
+  {name:'炼气', hp:240, mp:120, shen:60, shou:120, rate:0.30},
+  {name:'筑基', hp:520, mp:300, shen:130, shou:200, rate:0.25},
+  {name:'金丹', hp:1100, mp:700, shen:280, shou:500, rate:0.20},
+  {name:'元婴', hp:2400, mp:1600, shen:620, shou:1000, rate:0.15},
+  {name:'化神', hp:5200, mp:3500, shen:1300, shou:2000, rate:0.10},
+  {name:'炼虚', hp:11000, mp:7200, shen:2600, shou:3500, rate:0.08},
+  {name:'合体', hp:22000, mp:14000, shen:5200, shou:5000, rate:0.05},
+  {name:'大乘', hp:44000, mp:28000, shen:9000, shou:8000, rate:0.03},
+  {name:'渡劫', hp:90000, mp:56000, shen:16000, shou:10000, rate:0.0},
+];
+const SUB = [1, 1.3, 1.6, 2.0]; // 初/中/后/巅峰
+const SUBNAME = ['初期','中期','后期','巅峰'];
+
+const PROFS = {
+  剑修:{atk:1.8,def:0.85,desc:'一剑破万法，单体爆发极致',skill:{name:'御剑斩',mult:2.2,mp:15}},
+  法修:{atk:1.5,def:0.7,desc:'万法皆用，远程范围压制',skill:{name:'五行法术',mult:1.9,mp:20}},
+  体修:{atk:1.3,def:2.0,desc:'肉身成圣，近身越战越勇',skill:{name:'铁拳崩山',mult:1.7,mp:0}},
+  符修:{atk:1.6,def:1.0,desc:'符箓载道，爆发极快',skill:{name:'雷符爆',mult:2.0,mp:10}},
+  阵修:{atk:1.0,def:1.5,desc:'以阵御敌，守山护宗',skill:{name:'困仙阵',mult:1.3,mp:25}},
+  丹修:{atk:0.8,def:0.95,desc:'丹道即天道，地位超然',skill:{name:'丹爆',mult:1.4,mp:5}},
+  药修:{atk:0.8,def:0.95,desc:'以药济世，暗藏毒手',skill:{name:'毒砂掌',mult:1.3,mp:5}},
+  蛊修:{atk:1.2,def:1.0,desc:'万蛊噬心，防不胜防',skill:{name:'噬心蛊',mult:1.8,mp:10}},
+  器修:{atk:1.4,def:1.3,desc:'炼器即炼道，底牌极多',skill:{name:'祭器轰',mult:1.9,mp:8}},
+  妖修:{atk:1.5,def:1.4,desc:'妖气淬体，天赋神通',skill:{name:'妖化',mult:2.0,mp:12}},
+  魔修:{atk:1.7,def:1.0,desc:'魔功盖世，进境极快',skill:{name:'血祭',mult:2.3,mp:15}},
+};
+// 职业克制（攻方对守方加成）
+const KEKE = {剑修:'法修', 法修:'体修', 体修:'剑修', 符修:'魔修', 妖修:'魔修', 阵修:'妖修'};
+
+const ROOTS = ['金','木','水','火','土','风','雷','光','暗'];
+
+const LOCATIONS = {
+  changan:{name:'长安城', tier:2, type:'human', start:true,
+    desc:'天下第一雄城，朱雀大街贯通南北，护国大阵「九鼎山河阵」金光罩城，禁飞禁术。',
+    herbs:['聚气草','凝神花'], shop:true, neighbors:['luoyang','yangzhou','gusu','jinguan','kunlun']},
+  luoyang:{name:'洛阳城', tier:2, type:'human',
+    desc:'天下之中，洛水之滨。地下坊市「洛水市」专做修仙者生意，黑市交易猖獗。',
+    herbs:['凝神花','筑基草'], shop:true, neighbors:['changan','yangzhou']},
+  yangzhou:{name:'扬州城', tier:2, type:'human',
+    desc:'腰缠十万贯，骑鹤下扬州。琼花观下封着上古异宝，运河码头暗市专卖违禁灵物。',
+    herbs:['筑基草','水灵花'], shop:true, neighbors:['changan','luoyang','gusu']},
+  gusu:{name:'姑苏城', tier:2, type:'human',
+    desc:'人间天堂，粉墙黛瓦。听枫阁实为听雨楼分舵，太湖深处有碧波仙府幻影。',
+    herbs:['清心草','水灵花'], shop:true, neighbors:['yangzhou','jinguan']},
+  jinguan:{name:'锦官城', tier:2, type:'human',
+    desc:'天府之国，蜀中多剑修。青城山、峨眉金顶灵气清幽，青羊宫铜羊摸之祛病。',
+    herbs:['火棘果','金线草'], shop:true, neighbors:['gusu','changan','kunlun']},
+  kunlun:{name:'昆仑墟', tier:4, type:'human',
+    desc:'万山之祖，灵气最浓。玄天圣宗山门，周天星斗大阵漫天星斗。盛产万年寒玉、昆仑玉髓。',
+    herbs:['冰心莲','紫金参','万年灵芝'], shop:true, neighbors:['changan','jinguan','penglai','shidawan']},
+  penglai:{name:'蓬莱仙岛', tier:3, type:'neutral',
+    desc:'东海仙山，每月初一十五开「仙市」。炼丹制符驭兽之术闻名，岛主轮值统御东海散修。',
+    herbs:['月华草','紫金参'], shop:true, neighbors:['kunlun','yunmeng']},
+  shidawan:{name:'十万大山', tier:3, type:'danger',
+    desc:'西南瘴气弥漫，妖兽横行。瘴云谷底生九转还魂草，蛮族巫师蛊术亦正亦邪。',
+    herbs:['九转还魂草','渡厄莲','龙血草'], shop:false, neighbors:['kunlun','yunmeng']},
+  yunmeng:{name:'云梦泽', tier:3, type:'danger',
+    desc:'八百里烟波，水下暗河通幽冥。云梦仙洲有湘君祠半部水行功法，多水怪精魅。',
+    herbs:['冰心莲','渡厄莲'], shop:false, neighbors:['penglai','shidawan']},
+  yaojie:{name:'妖界·青丘', tier:4, type:'yao',
+    desc:'妖族祖地，狐族空灵、虎族威猛。万妖印统御万妖，妖皇白灵汐坐镇。',
+    herbs:['九叶金莲','凤凰花'], shop:true, neighbors:['shidawan','mojie']},
+  mojie:{name:'魔界·万魔窟', tier:5, type:'mo',
+    desc:'地底戾气充盈，魔修魔物栖身。魔晶石为至宝，深渊魔龙盘踞，魔尊魔罗天虎视眈眈。',
+    herbs:['龙血草','凤凰花'], shop:false, neighbors:['yaojie']},
+};
+
+// 灵草（品阶->名/卖价）
+const HERBS = {
+  '聚气草':{pin:1,price:3}, '清心草':{pin:1,price:3}, '止血草':{pin:1,price:2},
+  '凝神花':{pin:2,price:8}, '水灵花':{pin:2,price:8}, '火棘果':{pin:2,price:8},
+  '筑基草':{pin:3,price:20}, '金线草':{pin:3,price:18},
+  '血灵芝':{pin:4,price:45}, '龙血草':{pin:6,price:120},
+  '冰心莲':{pin:5,price:80}, '月华草':{pin:5,price:70},
+  '九转还魂草':{pin:6,price:150}, '渡厄莲':{pin:6,price:160},
+  '紫金参':{pin:7,price:260},
+  '万年灵芝':{pin:8,price:500},
+  '九叶金莲':{pin:9,price:1200}, '凤凰花':{pin:7,price:240},
+};
+
+// 商品
+const ITEMS = {
+  // 丹药
+  '聚气散':{cat:'丹药',type:'mp',val:80,price:8,desc:'恢复灵力'},
+  '疗伤丹':{cat:'丹药',type:'hp',val:300,price:15,desc:'恢复生命'},
+  '凝神丹':{cat:'丹药',type:'break',val:0.15,price:120,desc:'突破+15%率，防走火'},
+  '筑基丹':{cat:'丹药',type:'break',val:0.30,price:260,desc:'突破+30%率'},
+  '清心丹':{cat:'丹药',type:'cure',val:'心魔',price:60,desc:'解除心魔缠身'},
+  '回春丹':{cat:'丹药',type:'full',val:0.6,price:90,desc:'恢复60%生命灵力'},
+  // 符箓
+  '火符':{cat:'符箓',type:'atk',val:200,price:22,desc:'战斗中对敌造成200灵力伤害'},
+  '护身符':{cat:'符箓',type:'def',val:0.4,price:28,desc:'本场战斗减伤40%'},
+  '遁地符':{cat:'符箓',type:'flee',val:1,price:35,desc:'必定脱战'},
+  // 装备
+  '精钢飞剑':{cat:'武器',slot:'武器',atk:60,price:120,desc:'法器·下品'},
+  '寒铁剑':{cat:'武器',slot:'武器',atk:160,price:480,desc:'法器·中品'},
+  '青霜剑':{cat:'武器',slot:'武器',atk:380,price:1500,desc:'灵器·上品'},
+  '粗布法袍':{cat:'防具',slot:'防具',def:40,price:90,desc:'法器·下品'},
+  '玄铁甲':{cat:'防具',slot:'防具',def:140,price:520,desc:'灵器·中品'},
+  '储物戒':{cat:'饰品',slot:'饰品',def:30,price:260,desc:'扩充收纳'},
+};
+
+const ENEMY_NAMES = {
+  human:['散修独行客','拦路劫修','采药修士','巡查弟子','游方道人'],
+  danger:['瘴气妖兽','山魈','毒蛛精','黑鳞巨蟒','千年树妖'],
+  yao:['青丘狐卫','裂风虎将','碧磷蛇姬','搬山猿王','禽族哨探'],
+  mo:['血影魔修','骨刺夜叉','噬魂婆婆','深渊魔将','黑煞鬼卒'],
+  neutral:['海外散修','蓬莱守卫','蛟龙侍','海兽'],
+};
+
+/* ===================== 游戏状态 ===================== */
+let S = null;       // 玩家状态
+let logEl, choicesEl;
+const SAVE_KEY = 'xiuxian_save_v1';
+let CREATE_MODE = 'detail';   // 'detail' 详细创建 / 'quick' 快速开局
+const GAME_VER = '1.1';       // 当前版本号（每次大改请同步更新，并归档旧版本）
+document.getElementById('verLine').textContent =
+  '当前版本 V' + GAME_VER + ' · 鸿蒙初判，盘古开天。三界分立已万年，而你的故事，才刚刚开始。';
+
+function selectMode(m){
+  CREATE_MODE = m;
+  document.getElementById('detailFields').style.display = (m==='quick') ? 'none' : 'block';
+  document.getElementById('mDetail').className = 'btn sm' + (m==='detail' ? '' : ' ghost');
+  document.getElementById('mQuick').className = 'btn sm' + (m==='quick' ? '' : ' ghost');
+}
+
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+function realmStats(){
+  const r = REALMS[S.ri]; const m = SUB[S.si];
+  return {
+    hp: Math.round(r.hp*m*(1+(S.rootq==='天灵根'?0.1:0))),
+    mp: Math.round(r.mp*m),
+    shen: Math.round(r.shen*m),
+    shou: r.shou
+  };
+}
+function recalcMax(){
+  const st = realmStats();
+  S.maxHP = st.hp; S.maxMP = st.mp; S.maxShen = st.shen;
+}
+
+/* ===================== 角色创建 ===================== */
+function startGame(){
+  const name = document.getElementById('c_name').value.trim() || '无名';
+  const sex = document.getElementById('c_sex').value;
+  let age = +document.getElementById('c_age').value;
+  let origin = document.getElementById('c_origin').value;
+  let root = document.getElementById('c_root').value;
+  let rootq = document.getElementById('c_rootq').value;
+  let prof = document.getElementById('c_prof').value;
+  if(CREATE_MODE==='quick'){
+    const _o=['宗门弟子','世家子弟','散修','凡人平民','妖修','魔修']; origin=pick(_o);
+    root=pick(ROOTS);
+    const _rq=['天灵根','双灵根','三灵根','四灵根','五灵根']; rootq=pick(_rq);
+    prof=pick(Object.keys(PROFS));
+    age=rnd(14,55);
+  }
+
+  // 资质
+  let gen = (rootq==='天灵根')?rnd(75,95):(rootq==='双灵根')?rnd(60,82):(rootq==='三灵根')?rnd(50,72):(rootq==='四灵根')?rnd(42,62):rnd(38,58);
+  let wu = (rootq==='天灵根')?rnd(72,92):(rootq==='双灵根')?rnd(58,80):(rootq==='三灵根')?rnd(48,70):(rootq==='四灵根')?rnd(40,62):rnd(36,56);
+  let fu = (rootq==='杂灵根（多属性）')?rnd(70,95):rnd(35,70);
+  let rong = rnd(40,80), mei = rnd(35,85), yun = rnd(30,90);
+
+  // 初始资源
+  let spirit = {下:0,中:0,上:0,极:0}, gold=0, weapon=null, armor=null, skill='引气诀', wp=[];
+  if(origin==='宗门弟子'){ spirit.下=60; wp.push('聚气散×3','疗伤丹×2'); weapon='精钢飞剑'; }
+  else if(origin==='世家子弟'){ spirit.下=200; spirit.中=5; gold=500; weapon='寒铁剑'; armor='玄铁甲'; wp.push('聚气散×5','疗伤丹×4','筑基丹×1'); }
+  else if(origin==='散修'){ spirit.下=35; wp.push('聚气散×2','疗伤丹×1'); weapon='精钢飞剑'; }
+  else if(origin==='凡人平民'){ spirit.下=10; gold=200; skill='粗浅吐纳'; }
+  else if(origin==='妖修'){ spirit.下=40; wp.push('疗伤丹×2'); weapon='精钢飞剑'; }
+  else if(origin==='魔修'){ spirit.下=40; wp.push('疗伤丹×2'); weapon='精钢飞剑'; }
+
+  const startLoc = (origin==='妖修')?'yaojie':(origin==='魔修')?'mojie':'changan';
+
+  S = {
+    name, sex, age, origin, root, rootq, prof,
+    ri:0, si:0, prog:0,           // 境界索引/小境/进度
+    HP:0, MP:0, EN:100, SH:0,    // 生命/灵力/体力/神识(当前)
+    maxHP:0, maxMP:0, maxShen:0,
+    gen, wu, fu, rong, mei, yun,  // 根骨/悟性/福缘/容貌/魅力/气运
+    weapon, armor, ring:null,
+    spirit, gold, bag:{},          // bag: 名称->数量（丹药/符箓/灵草/材料）
+    wp,                           // 功法列表
+    skills:[PROFS[prof].skill.name],
+    loc:startLoc, year:1, month:1, day:1, shichen:5, // 辰时
+    weather:'晴', status:[], fame:0,
+  };
+  // 加入初始丹药
+  wp.forEach(w=>{ const [n,c]=w.split('×'); S.bag[n]=(S.bag[n]||0)+(+c||1); });
+  S.wp = [skill];
+  recalcMax();
+  S.HP=S.maxHP; S.MP=S.maxMP; S.SH=S.maxShen;
+
+  document.getElementById('create').style.display='none';
+  document.getElementById('game').style.display='grid';
+  logEl=document.getElementById('log'); choicesEl=document.getElementById('choices');
+  logEl.innerHTML='';
+  let intro='✦ 你以【'+name+'】之名踏入修仙界。出身：'+origin+'，灵根：'+root+'（'+rootq+'），主修：'+prof+'.';
+  if(CREATE_MODE==='quick') intro+='（快速开局，资质皆为天意随机）';
+  log(intro,'ev');
+  log('天地不仁，以万物为刍狗；然修仙者不信命，以逆天改命为毕生之志。三界的故事，自你落笔。','sys');
+  renderAll();
+  event_arrive();
+}
+
+/* ===================== 渲染 ===================== */
+function renderAll(){ renderTop(); renderStatus(); renderMap(); renderBag(); }
+
+function renderTop(){
+  const SHICHEN=['子时','丑时','寅时','卯时','辰时','巳时','午时','未时','申时','酉时','戌时','亥时'];
+  document.getElementById('t_time').textContent='大晟开元'+S.year+'年 '+S.month+'月'+S.day+'日 '+SHICHEN[S.shichen];
+  document.getElementById('t_loc').textContent=LOCATIONS[S.loc].name;
+  document.getElementById('t_weather').textContent=S.weather;
+  document.getElementById('t_realm').textContent=REALMS[S.ri].name+SUBNAME[S.si];
+}
+
+function bar(cls,cur,max){
+  const p=clamp(Math.round(cur/max*100),0,100);
+  const col = p>50?'#2f6b3a':p>20?'#b7950b':'#9e2b25';
+  return '<div class="bar '+cls+'"><i style="width:'+p+'%;background:'+col+'"></i></div>';
+}
+function renderStatus(){
+  const p=PROFS[S.prof];
+  let h='<h3 class="seal">'+S.name+'</h3>';
+  h+='<div class="small">'+S.sex+' · '+S.age+'岁 · '+S.origin+'</div>';
+  h+='<div class="small" style="margin:4px 0">❤ 生命'+bar('hp',S.HP,S.maxHP)+Math.round(S.HP)+'/'+S.maxHP+'</div>';
+  h+='<div class="small">💧 灵力'+bar('mp',S.MP,S.maxMP)+Math.round(S.MP)+'/'+S.maxMP+'</div>';
+  h+='<div class="small">⚡ 体力'+bar('en',S.EN,100)+Math.round(S.EN)+'/100</div>';
+  h+='<div class="small">👁 神识'+bar('sh',S.SH,S.maxShen)+Math.round(S.SH)+'/'+S.maxShen+'</div>';
+  h+='<div class="stat-grid" style="margin-top:8px">';
+  h+='<span>🔥境界</span><span>'+REALMS[S.ri].name+SUBNAME[S.si]+'（进度'+Math.round(S.prog)+'%）</span>';
+  h+='<span>⚔职业</span><span>'+S.prof+'</span>';
+  h+='<span>🌿灵根</span><span>'+S.root+'（'+S.rootq+'）</span>';
+  h+='<span>💪根骨</span><span>'+S.gen+'</span>';
+  h+='<span>🧠悟性</span><span>'+S.wu+'</span>';
+  h+='<span>🍀福缘</span><span>'+S.fu+'</span>';
+  h+='<span>💄容貌</span><span>'+S.rong+'</span>';
+  h+='<span>💋魅力</span><span>'+S.mei+'</span>';
+  h+='<span>⭐气运</span><span>'+S.yun+'（隐）</span>';
+  h+='</div>';
+  h+='<div class="small" style="margin-top:6px">🗡武器：'+(S.weapon||'无')+'　🛡防具：'+(S.armor||'无')+'</div>';
+  h+='<div class="small">💰灵石：下'+S.spirit.下+' 中'+S.spirit.中+' 上'+S.spirit.上+' 极'+S.spirit.极+'　🪙金'+S.gold+'两</div>';
+  if(S.status.length) h+='<div class="small" style="color:var(--bad)">状态：'+S.status.map(s=>s.t).join('、')+'</div>';
+  document.getElementById('statusPanel').innerHTML=h;
+}
+
+function renderMap(){
+  let h='';
+  const cur=LOCATIONS[S.loc];
+  for(const id in LOCATIONS){
+    const L=LOCATIONS[id];
+    if(id===S.loc) h+='<button class="mapbtn cur">▣ '+L.name+'（当前）</button>';
+    else if(cur.neighbors.includes(id)) h+='<button class="mapbtn" onclick="travelTo(\''+id+'\')">→ '+L.name+'</button>';
+  }
+  document.getElementById('map').innerHTML=h;
+}
+
+function renderBag(){
+  let h='<div>💊丹药/符箓：</div>';
+  let any=false;
+  for(const k in S.bag){
+    if(S.bag[k]<=0) continue; any=true;
+    const it=ITEMS[k]||HERBS[k];
+    const pin = HERBS[k]?('·'+HERBS[k].pin+'品'):(it.cat==='丹药'?'·丹':it.cat==='符箓'?'·符':'');
+    h+='<div>· '+k+' ×'+S.bag[k]+' <span class="small">'+pin+'</span></div>';
+  }
+  if(!any) h+='<div class="small">（空）</div>';
+  document.getElementById('bag').innerHTML=h;
+}
+
+/* ===================== 日志/选项 ===================== */
+function log(t,cls=''){ const d=document.createElement('div'); d.className='line '+(cls||''); d.innerHTML=t; logEl.appendChild(d); logEl.scrollTop=logEl.scrollHeight; }
+function setChoices(list){
+  choicesEl.innerHTML='';
+  list.forEach((c,i)=>{
+    const b=document.createElement('button'); b.className='btn sm'+(c.ghost?' ghost':'');
+    b.textContent=(i<4?['A','B','C','D'][i]+'：':'')+c.t;
+    b.onclick=()=>{ if(c.act) c.act(); };
+    choicesEl.appendChild(b);
+    if(i===4) {/* E自由已单独有输入框 */}
+  });
+}
+function sendFree(){
+  const v=document.getElementById('freeInput').value.trim();
+  document.getElementById('freeInput').value='';
+  if(!v) return;
+  parseCmd(v);
+}
+function parseCmd(v){
+  const t=v.replace(/\s/g,'');
+  if(/修炼|打坐|吐纳/.test(t)) return doCultivate();
+  if(/突破/.test(t)) return tryBreak();
+  if(/前往|去|出发|传送/.test(t)){
+    for(const id in LOCATIONS){ if(LOCATIONS[id].name.includes(t.replace(/前往|去|出发|传送/g,''))||t.includes(LOCATIONS[id].name)) return travelTo(id); }
+    return log('未找到该地点，或此地从当前位置无法直接抵达。','sys');
+  }
+  if(/探索|游历|走动|查看/.test(t)) return explore();
+  if(/采药|采集|寻草|挖草/.test(t)) return gather();
+  if(/出手|攻击|战斗|杀|迎战|御敌/.test(t)) return combatAction('attack');
+  if(/技能|施法/.test(t)) return combatAction('skill');
+  if(/防御|守|硬抗/.test(t)) return combatAction('defend');
+  if(/逃跑|遁走|撤退|逃/.test(t)) return combatAction('flee');
+  if(/休息|睡觉|睡眠|调息/.test(t)) return rest();
+  if(/商店|买卖|交易|shop/i.test(t)) return openShop();
+  if(/使用|服|吃|用/.test(t)){ const m=t.match(/使用?(.+)/); if(m) return useItemByName(m[1]); }
+  if(/存档/.test(t)) return saveGame();
+  if(/读档/.test(t)) return loadGame();
+  if(/状态|属性/.test(t)){ renderAll(); return log('已刷新状态面板。','sys'); }
+  log('你欲「'+v+'」，然天地间无此道法可循。可试：修炼 / 前往某地 / 探索 / 采药 / 出手 / 休息 / 商店。','sys');
+}
+
+/* ===================== 时间 ===================== */
+const WEATHERS=['晴','阴','雨','雪','雾','雷雨','酷暑','风沙'];
+function advanceTime(shichen){
+  S.shichen+=shichen;
+  while(S.shichen>=12){ S.shichen-=12; S.day++; if(S.day>30){S.day=1;S.month++; if(S.month>12){S.month=1;S.year++;}} }
+  S.weather = (S.loc==='mojie')?'魔煞弥漫':(S.loc==='yaojie')?'灵雾缭绕':pick(WEATHERS);
+  // 状态计时
+  S.status=S.status.filter(s=>{ if(s.turns!==undefined){ s.turns--; if(s.turns<=0){ log('【状态】'+s.t+'已消散。','good'); return false; } } return true; });
+  // 自动机缘判定
+  if(S.fu/5 > Math.random()*100){
+    const luck = S.yun>=80?2:1;
+    if(luck>1 && Math.random()<0.5) bigFortune(); else smallFortune();
+  }
+  renderTop();
+}
+
+/* ===================== 核心行动 ===================== */
+function event_arrive(){
+  const L=LOCATIONS[S.loc];
+  log('—— 你来到【'+L.name+'】。'+L.desc,'ev');
+  // 是否触发事件
+  if(Math.random()<0.55){ randomEvent(); }
+  else defaultChoices();
+}
+
+function randomEvent(){
+  const r=Math.random();
+  if(r<0.4){ startCombat(); }
+  else if(r<0.7){ smallFortune(); }
+  else {
+    log('你行至一处，'+pick(['见古碑残破，石上似有阵纹流转','遇一老者负手而立，目光如电，却未多言','闻摊贩叫卖，市井烟火气十足','望山门巍峨，匾额斑驳，灵气隐隐'])+'。','sys');
+    defaultChoices();
+  }
+}
+
+function defaultChoices(){
+  setChoices([
+    {t:'打坐修炼（提升修为进度）',act:doCultivate},
+    {t:'探索周遭（可能触发奇遇/战斗）',act:explore},
+    {t:'采集灵草（按地点产出）',act:gather},
+    {t:'进城坊市 / 休息调养',act:()=>{ if(LOCATIONS[S.loc].shop) openShop(); else rest(); }},
+  ]);
+}
+
+function doCultivate(){
+  if(S.EN<10){ log('体力不足以支撑打坐，先进食或休息。','bad'); return defaultChoices(); }
+  const gain = (1.5 + S.wu/40 + (S.rootq==='天灵根'?1:0)) * rnd(3,6);
+  S.prog = clamp(S.prog+gain,0,100);
+  S.EN-=8; S.MP=clamp(S.MP+Math.round(S.maxMP*0.05),0,S.maxMP);
+  advanceTime(rnd(2,6));
+  log('你盘膝而坐，引气入体，灵气如涓涓细流汇入丹田。修为进度 +'+gain.toFixed(1)+'%（当前 '+Math.round(S.prog)+'%）。','good');
+  if(S.prog>=100 && S.ri<8) log('🌟 修为已圆满，可尝试【突破】境界！','ev');
+  renderAll();
+  if(S.prog>=100 && S.ri<8) tryBreakPrompt(); else defaultChoices();
+}
+
+function tryBreakPrompt(){
+  setChoices([
+    {t:'凝聚道基，尝试突破！',act:tryBreak},
+    {t:'再沉淀一二，暂不突破',act:defaultChoices},
+  ]);
+}
+
+function tryBreak(){
+  if(S.ri>=8){ log('你已是渡劫期，只待九重天雷，破碎虚空，飞升上界。','ev'); return defaultChoices(); }
+  if(S.prog<100){ log('修为未满，不可强突破，以免根基崩散。','bad'); return defaultChoices(); }
+  const next=REALMS[S.ri+1];
+  let rate=next.rate;
+  // 加成
+  const breakItems=['筑基丹','凝神丹'];
+  breakItems.forEach(n=>{ if(S.bag[n]>0){ rate+=ITEMS[n].val; S.bag[n]--; log('动用【'+n+'】，突破率 +'+(ITEMS[n].val*100)+'%。','good'); } });
+  rate += (S.gen/10)*0.02 + (S.fu/10)*0.01;
+  if(LOCATIONS[S.loc].tier>=4) rate+=0.05; // 灵地
+  rate=clamp(rate,0.02,0.95);
+  const roll=Math.random();
+  advanceTime(rnd(3,8));
+  if(roll<rate){
+    S.ri++; S.si=0; S.prog=0;
+    const oldHP=S.maxHP, oldMP=S.maxMP, oldSH=S.maxShen;
+    recalcMax();
+    const dh=S.maxHP-oldHP, dm=S.maxMP-oldMP, ds=S.maxShen-oldSH;
+    S.HP=clamp(S.HP+dh,0,S.maxHP); S.MP=clamp(S.MP+dm,0,S.maxMP); S.SH=clamp(S.SH+ds,0,S.maxShen);
+    log('⚡ 轰！天地震动，你冲破桎梏，成功晋升【'+next.name+SUBNAME[0]+'】！各项上限大幅提升。','good');
+    if(S.ri===8) log('🌟 你已至渡劫期，九重天雷在即。渡劫成功便可飞升——三界将铭记你的名号。','ev');
+  } else {
+    const hard=Math.random()<0.5;
+    if(hard){
+      S.prog=clamp(S.prog-rnd(10,30),0,100);
+      S.HP=clamp(S.HP-S.maxHP*0.5,1,S.maxHP);
+      S.status.push({t:'走火入魔',turns:4});
+      log('💥 突破失败！灵力逆乱，走火入魔，生命 -50%，修为倒退。','bad');
+    } else {
+      S.prog=clamp(S.prog-rnd(10,30),0,100);
+      log('突破失败，灵气溃散，修为倒退些许，所幸根基无碍。','bad');
+    }
+  }
+  renderAll(); defaultChoices();
+}
+
+function travelTo(id){
+  if(!LOCATIONS[S.loc].neighbors.includes(id)){ log('此地从当前位置无法直接抵达。','sys'); return; }
+  S.loc=id; S.EN-=rnd(4,10); advanceTime(rnd(2,4));
+  renderAll(); event_arrive();
+}
+
+function explore(){
+  if(S.EN<5){ log('体力不支，无法远行探索。','bad'); return defaultChoices(); }
+  S.EN-=rnd(4,8); advanceTime(rnd(1,4));
+  const r=Math.random();
+  if(r<0.45){ startCombat(); }
+  else if(r<0.7){ smallFortune(); }
+  else { log('你踏勘此地，山水无恙，唯闻风过林梢。'+(S.EN<20?'（体力渐乏）':''),'sys'); renderAll(); defaultChoices(); }
+}
+
+function gather(){
+  const L=LOCATIONS[S.loc];
+  if(!L.herbs || !L.herbs.length){ log('此地灵气稀薄，寻不得什么灵草。','sys'); return defaultChoices(); }
+  if(S.EN<6){ log('体力不足，采药需气力。','bad'); return defaultChoices(); }
+  S.EN-=6; advanceTime(rnd(1,3));
+  // 按地点 tier 决定可采品阶概率
+  const name=pick(L.herbs);
+  S.bag[name]=(S.bag[name]||0)+1;
+  const pin=HERBS[name].pin;
+  log('你在山野间采得【'+name+'】（'+pin+'品灵草）！可售于坊市或留待炼丹。','good');
+  // 采药时偶遇妖兽
+  if(Math.random()<0.3){ log('采药间忽觉腥风扑面——有妖兽循味而来！','ev'); startCombat(); return; }
+  renderAll(); defaultChoices();
+}
+
+function rest(){
+  S.EN=clamp(S.EN+40,0,100); S.HP=clamp(S.HP+Math.round(S.maxHP*0.2),0,S.maxHP);
+  S.MP=clamp(S.MP+Math.round(S.maxMP*0.2),0,S.maxMP);
+  advanceTime(rnd(4,8));
+  log('你寻一处静地调息安睡，体力恢复，伤势稍愈。','good');
+  renderAll(); defaultChoices();
+}
+
+/* ===================== 机缘 ===================== */
+function smallFortune(){
+  const r=Math.random();
+  if(r<0.4){ const g=rnd(5,30); S.gold+=g; log('路遇落难商队，你拾得遗落的金银 '+g+' 两。','good'); }
+  else if(r<0.7){ const n=pick(LOCATIONS[S.loc].herbs||['聚气草']); S.bag[n]=(S.bag[n]||0)+1; log('草丛石缝间忽现灵光，你寻得【'+n+'】一株。','good'); }
+  else { const e=rnd(1,3); S.spirit.下+=e; log('你在溪畔洗漱，竟从沙中淘出下品灵石 '+e+' 枚。','good'); }
+  renderAll(); defaultChoices();
+}
+function bigFortune(){
+  const pool=['紫金参','万年灵芝','九叶金莲','冰心莲','渡厄莲'];
+  const n=pick(pool.filter(x=>HERBS[x]));
+  S.bag[n]=(S.bag[n]||0)+1;
+  log('🌟 大机缘！你误入一处隐秘洞天，得遇传说级灵物【'+n+'】！','good');
+  renderAll(); defaultChoices();
+}
+
+/* ===================== 战斗 ===================== */
+let COMBAT=null;
+function startCombat(){
+  const L=LOCATIONS[S.loc];
+  const type = (L.type==='mo')?'mo':(L.type==='yao')?'yao':(L.type==='danger')?'danger':(L.type==='neutral')?'neutral':'human';
+  const name=pick(ENEMY_NAMES[type]);
+  // 敌人境界：随地点 tier
+  let eri = clamp(S.ri + rnd(-1,1) + Math.floor((L.tier-2)/1.5), 0, 8);
+  const eprof = (type==='mo')?'魔修':(type==='yao')?'妖修':pick(['剑修','法修','体修','符修']);
+  const est=REALMS[eri];
+  const ehp=Math.round(est.hp*SUB[rnd(0,3)]*(0.8+Math.random()*0.5));
+  COMBAT={ name, ri:eri, prof:eprof, HP:ehp, maxHP:ehp,
+    defPow:(eri*20+30)*PROFS[eprof].def*(0.8+Math.random()*0.4),
+    atkPow:(eri*40+50)*PROFS[eprof].atk*(0.8+Math.random()*0.4),
+    turn:0, defend:false, eDefend:false };
+  log('⚔ 遭遇【'+name+'】（'+REALMS[eri].name+'·'+eprof+'）！一场恶战在所难免。','ev');
+  combatChoices();
+}
+function combatChoices(){
+  setChoices([
+    {t:'御敌强攻（普通攻击）',act:()=>combatAction('attack')},
+    {t:'施展绝技「'+PROFS[S.prof].skill.name+'」',act:()=>combatAction('skill')},
+    {t:'凝神防御',act:()=>combatAction('defend')},
+    {t:'遁走脱战',act:()=>combatAction('flee')},
+  ]);
+}
+function combatAction(act){
+  if(!COMBAT) return;
+  COMBAT.turn++;
+  let pAtk=(S.ri*40+60+SUB[S.si]*15)*PROFS[S.prof].atk;
+  let pDef=(S.ri*20+20)*PROFS[S.prof].def;
+  if(S.weapon) pAtk+=weaponAtk(S.weapon);
+  if(S.armor) pDef+=armorDef(S.armor);
+
+  // 玩家行动
+  if(act==='flee'){
+    const sk = S.bag['遁地符']>0;
+    if(sk){ S.bag['遁地符']--; log('你捏碎【遁地符】，金光一闪，瞬息脱身。','good'); COMBAT=null; advanceTime(1); renderAll(); return defaultChoices(); }
+    const chance = 0.3 + (S.ri-COMBAT.ri)*0.1;
+    if(Math.random()<chance){ log('你身法如电，撤出战圈，全身而退。','good'); COMBAT=null; advanceTime(1); renderAll(); return defaultChoices(); }
+    log('逃跑失败！破绽大露。','bad');
+  } else if(act==='defend'){
+    COMBAT.defend=true; log('你凝神聚气，守势如铁壁。','sys');
+  } else {
+    COMBAT.defend=false;
+    let mult=1, mp=0;
+    if(act==='skill'){ const sk=PROFS[S.prof].skill; mult=sk.mult; mp=sk.mp;
+      if(S.MP<mp){ log('灵力不足，绝技难以施展，只得强行为之！','bad'); S.HP=clamp(S.HP-S.maxHP*0.05,1,S.maxHP); }
+      else S.MP-=mp;
+    }
+    let dmg=Math.round(pAtk*mult - COMBAT.defPow*0.6);
+    // 职业克制
+    if(KEKE[S.prof]===COMBAT.prof) dmg=Math.round(dmg*1.25);
+    // 暴击
+    if(S.fu>=70 && Math.random()<S.fu/300){ dmg=Math.round(dmg*1.8); log('✦ 暴击！', 'good'); }
+    dmg=Math.max(1,dmg);
+    COMBAT.HP-=dmg;
+    log('你'+(act==='skill'?'施展【'+PROFS[S.prof].skill.name+'】':'挥击')+'，重创'+COMBAT.name+'，造成 '+dmg+' 点伤害。','good');
+    // 火符
+    if(S.bag['火符']>0 && Math.random()<0.25){ S.bag['火符']--; COMBAT.HP-=200; log('顺势甩出【火符】，再添 200 伤！','good'); }
+  }
+  if(COMBAT.HP<=0){ return winCombat(); }
+
+  // 敌方行动
+  if(COMBAT.eDefend) COMBAT.eDefend=false;
+  // 敌方也偶尔用技能
+  let em=1 + (Math.random()<0.35?0.6:0);
+  let edmg=Math.round(COMBAT.atkPow*em - pDef*0.6);
+  if(KEKE[COMBAT.prof]===S.prof) edmg=Math.round(edmg*1.25);
+  if(COMBAT.defend) edmg=Math.round(edmg*0.4);
+  edmg=Math.max(1,edmg);
+  S.HP-=edmg;
+  log(COMBAT.name+'反扑，你受 '+edmg+' 点伤害。'+(S.HP< S.maxHP*0.3?'（气血危急！）':''),'bad');
+  COMBAT.defend=false;
+  advanceTime(1);
+  renderAll();
+  if(S.HP<=0) return dead();
+  combatChoices();
+}
+function winCombat(){
+  const exp = (COMBAT.ri+1)*rnd(8,16);
+  S.prog=clamp(S.prog+exp/3,0,100);
+  const drop = COMBAT.ri>=2 ? rnd(5,20) : rnd(1,6);
+  S.spirit.下+=drop;
+  let txt='⚔ 你斩杀【'+COMBAT.name+'】，修为精进，得下品灵石 '+drop+' 枚。';
+  if(Math.random()<0.3){ const g=rnd(2,15); S.gold+=g; txt+=' 另获金银 '+g+' 两。'; }
+  log(txt,'good');
+  COMBAT=null; advanceTime(rnd(1,2)); renderAll();
+  if(S.prog>=100 && S.ri<8) tryBreakPrompt(); else defaultChoices();
+}
+function dead(){
+  log('💀 你气血耗尽，倒在血泊之中……','bad');
+  log('（本局结束。可「读档」回到上次存档，或刷新页面重开。）','sys');
+  COMBAT=null; setChoices([{t:'读档续命',act:loadGame},{t:'重开此世',act:()=>location.reload()}]);
+}
+
+function weaponAtk(n){ return ITEMS[n]?ITEMS[n].atk:30; }
+function armorDef(n){ return ITEMS[n]?ITEMS[n].def:20; }
+
+/* ===================== 物品使用 ===================== */
+function useItemByName(name){
+  // 在背包里模糊匹配
+  let key=null;
+  for(const k in S.bag){ if(S.bag[k]>0 && (k.includes(name)||name.includes(k))){ key=k; break; } }
+  if(!key){ log('行囊中并无此物。','sys'); return; }
+  useItem(key);
+}
+function useItem(key){
+  if(!S.bag[key]||S.bag[key]<=0){ log('该物已用完。','sys'); return; }
+  const it=ITEMS[key];
+  if(!it){ // 灵草类：直接卖或留，提示
+    log('【'+key+'】为灵草材料，可于坊市售出，或留待炼丹（炼丹系统后续开放）。','sys'); return;
+  }
+  if(it.cat==='丹药'){
+    if(it.type==='hp'){ S.HP=clamp(S.HP+it.val,0,S.maxHP); }
+    else if(it.type==='mp'){ S.MP=clamp(S.MP+it.val,0,S.maxMP); }
+    else if(it.type==='full'){ S.HP=clamp(S.HP+S.maxHP*it.val,0,S.maxHP); S.MP=clamp(S.MP+S.maxMP*it.val,0,S.maxMP); }
+    else if(it.type==='cure'){ S.status=S.status.filter(s=>s.t!==it.val); }
+    else if(it.type==='break'){ log('【'+key+'】须在突破时使用，当前已收入囊中。','sys'); return; }
+    S.bag[key]--; log('你服下【'+key+'】，'+it.desc+'。','good');
+  } else if(it.cat==='符箓'){
+    if(it.type==='flee'){ log('【'+key+'】须在战斗中使用。','sys'); return; }
+    if(it.type==='def'){ if(COMBAT){ COMBAT.youDefBuff=(COMBAT.youDefBuff||1)*it.val; } log('【'+key+'】须在战斗中使用。','sys'); return; }
+    if(it.type==='atk'){ if(COMBAT){ COMBAT.HP-=it.val; S.bag[key]--; log('甩出【'+key+'】，伤敌 '+it.val+'！','good'); if(COMBAT.HP<=0) return winCombat(); } else log('【'+key+'】须在战斗中使用。','sys'); return; }
+  }
+  advanceTime(1); renderAll(); defaultChoices();
+}
+
+/* ===================== 商店 ===================== */
+function openShop(){
+  const L=LOCATIONS[S.loc];
+  if(!L.shop){ log('此地无正规坊市，唯黑市隐于暗处（暂未开放）。','sys'); return rest(); }
+  const box=document.getElementById('modalBox');
+  let h='<h2 class="seal">🏪 '+L.name+'·坊市</h2>';
+  h+='<p class="small">你的灵石：下'+S.spirit.下+' 中'+S.spirit.中+' 上'+S.spirit.上+' 极'+S.spirit.极+'　金银 '+S.gold+' 两</p>';
+  h+='<div class="mtip">—— 收购（你卖） ——</div>';
+  let sellList=[];
+  for(const k in S.bag){ if(S.bag[k]>0 && HERBS[k]) sellList.push(k); }
+  if(sellList.length){
+    sellList.forEach(k=>{ const price=HERBS[k].price;
+      h+='<div class="shopitem"><span>'+k+'（'+HERBS[k].pin+'品）×'+S.bag[k]+'　售价 '+price+' 下品灵石/株</span><button class="btn sm" onclick="sellHerb(\''+k+'\')">卖1</button></div>';
+    });
+  } else h+='<div class="small">（无灵草可卖）</div>';
+  h+='<div class="mtip">—— 出售（你买） ——</div>';
+  for(const k in ITEMS){ const it=ITEMS[k];
+    h+='<div class="shopitem"><span>'+k+'　'+it.price+' 下品灵石　<span class="small">'+it.desc+'</span></span><button class="btn sm" onclick="buyItem(\''+k+'\')">买</button></div>';
+  }
+  h+='<div class="center" style="margin-top:12px"><button class="btn ghost" onclick="closeModal()">离开坊市</button></div>';
+  box.innerHTML=h; document.getElementById('modal').classList.add('show');
+  log('你步入坊市，奇珍异宝、灵草法器琳琅满目。','sys');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('show'); defaultChoices(); }
+function buyItem(k){
+  const it=ITEMS[k]; if(S.spirit.下<it.price){ log('下品灵石不足，买不起【'+k+'】。','bad'); return; }
+  S.spirit.下-=it.price;
+  if(it.cat==='丹药'||it.cat==='符箓') S.bag[k]=(S.bag[k]||0)+1;
+  else if(it.slot==='武器'){ if(S.weapon && ITEMS[S.weapon]) S.spirit.下+=Math.round(ITEMS[S.weapon].price*0.4); S.weapon=k; }
+  else if(it.slot==='防具'){ if(S.armor && ITEMS[S.armor]) S.spirit.下+=Math.round(ITEMS[S.armor].price*0.4); S.armor=k; }
+  else if(it.slot==='饰品'){ S.ring=k; }
+  log('购入【'+k+'】。','good'); openShop(); renderAll();
+}
+function sellHerb(k){
+  const price=HERBS[k].price; if(!S.bag[k]||S.bag[k]<=0) return;
+  S.bag[k]--; S.spirit.下+=price; log('售出【'+k+'】，得下品灵石 '+price+' 枚。','good');
+  openShop(); renderAll();
+}
+
+/* ===================== 存档 ===================== */
+function saveGame(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); log('【存档点】当前进度已记录于天地之间。','good'); }
+  catch(e){ log('存档失败：'+e.message,'bad'); }
+}
+function loadGame(){
+  const d=localStorage.getItem(SAVE_KEY);
+  if(!d){ log('尚无可读取的存档。','sys'); return; }
+  S=JSON.parse(d); COMBAT=null;
+  log('【读档】时光倒流，你回到了上次存档之处。','good');
+  renderAll(); defaultChoices();
+}
+
+/* ===================== 帮助 ===================== */
+function openHelp(){
+  const box=document.getElementById('modalBox');
+  box.innerHTML='<h2 class="seal">玩法 · 三界录</h2>'+
+  '<p>① 创建角色后，于中央日志查看剧情，下方按钮或输入框行动。</p>'+
+  '<p>② 修炼可提升修为进度；满 100% 可突破境界（有失败风险，可用筑基丹/凝神丹加成）。</p>'+
+  '<p>③ 点击右侧舆图可前往相邻地点；探索/采药可能触发战斗或机缘。</p>'+
+  '<p>④ 战斗：强攻 / 绝技 / 防御 / 遁走。职业有克制（剑克法、法克体、体克剑、符克魔、妖克魔、阵克妖）。福缘≥70 可暴击。</p>'+
+  '<p>⑤ 坊市买卖灵草、丹药、符箓、装备；丹药可在战斗外服用恢复。</p>'+
+  '<p>⑥ 自由指令示例：<b>修炼 / 前往昆仑墟 / 探索 / 采药 / 出手 / 使用疗伤丹 / 休息 / 商店 / 存档</b>。</p>'+
+  '<p class="small">世界观源自《修仙世界设定集》：三界分立、九境十一职业、灵根灵草灵宠奇珍俱全。</p>'+
+  '<div class="center" style="margin-top:10px"><button class="btn" onclick="closeModal()">知道了</button></div>';
+  document.getElementById('modal').classList.add('show');
+}
+
+/* 启动即开帮助可注释；此处默认进入创建 */
+</script>
+</body>
+</html>
