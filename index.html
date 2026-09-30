@@ -722,11 +722,11 @@ function openInterpersonal(){
   const purs=S.companions.filter(c=>!c.married);
   h+='<div class="mtip">—— 追求中（'+purs.length+' 位）'+(purs.length>=2?'　<span class="tag r">⚠ 多线并行，好感衰减加速</span>':'')+' ——</div>';
   if(!purs.length) h+='<div class="small">（暂无追求中的缘法，可「社交结识」结识新人）</div>';
-  else purs.forEach(c=>{ const i=S.companions.indexOf(c); h+='<div class="shopitem"><span>'+c.name+'（'+c.sex+'·'+c.ident+'·'+c.trait+'）好感'+Math.round(c.fav)+'</span><button class="btn sm" onclick="openCompanionMenu('+i+')">互动</button></div>'; });
+  else purs.forEach((c,pi)=>{ const i=S.companions.indexOf(c); h+='<div class="shopitem"><span>缘法第'+ordCn(pi+1)+'位 · '+c.name+'（'+c.sex+'·'+c.ident+'·'+c.trait+'）好感'+Math.round(c.fav)+'</span><button class="btn sm" onclick="openCompanionMenu('+i+')">互动</button></div>'; });
   const mc=S.companions.filter(c=>c.married);
   h+='<div class="mtip">—— 道侣（'+mc.length+' 位，已入家族） ——</div>';
   if(!mc.length) h+='<div class="small">（尚未结为道侣）</div>';
-  else mc.forEach(c=>{ h+='<div class="shopitem"><span>'+c.name+'（'+c.ident+'·好感'+Math.round(c.fav)+'）已结道侣</span><button class="btn sm ghost" onclick="openFamily()">见家族</button></div>'; });
+  else mc.forEach((c,mi)=>{ h+='<div class="shopitem"><span>第'+ordCn(mi+1)+'任道侣 · '+c.name+'（'+c.ident+'·好感'+Math.round(c.fav)+'）</span><button class="btn sm ghost" onclick="openFamily()">见家族</button></div>'; });
   h+='<div class="mtip">—— 知己好友（'+S.friends.length+' 位） ——</div>';
   if(!S.friends.length) h+='<div class="small">（暂无好友，社交可结为知己）</div>';
   else S.friends.forEach(f=>{ h+='<div class="small">· '+f.name+'（'+f.sex+'·'+f.ident+'·'+f.trait+'）</div>'; });
@@ -2046,6 +2046,9 @@ function pursuingCount(){ return (S.companions||[]).filter(c=>!c.married).length
 function findCompanion(name){ return (S.companions||[]).find(c=>c.name===name); }
 function removeCompanion(c){ const i=S.companions.indexOf(c); if(i>=0) S.companions.splice(i,1); }
 function primaryCompanion(){ const mc=marriedCompanions(); return mc.length?mc[0]:null; }
+// V1.9 伴侣序号：第 N 任道侣 / 缘法第 N 位
+function ordCn(n){ const d=['','一','二','三','四','五','六','七','八','九','十']; if(n<=10) return d[n]; if(n<20) return '十'+(d[n-10]||''); return ''+n; }
+function marriedRank(name){ const mc=marriedCompanions(); const i=mc.findIndex(c=>c.name===name); return i>=0?i+1:0; }
 function social(){
   if(S.age<ADULT_AGE){ log('你尚且年幼，情缘之事无从谈起。（及冠之后自有姻缘）','sys'); return defaultChoices(); }
   if(S.EN<3){ log('倦怠，无心交际。','sys'); return defaultChoices(); }
@@ -2080,7 +2083,7 @@ function openCompanionMenu(idx){
   if(!c.married){
     log('你与【'+c.name+'】（'+c.sex+'·'+c.ident+'·'+c.trait+'）情谊日笃，好感 '+Math.round(c.fav)+'。','sys');
     setChoices([
-      {t:'求结为道侣（需好感≥60）',act:()=>{ if(c.fav>=60){c.married=true;log('🌸 你与【'+c.name+'】结为道侣，山盟海誓，三界为证。','good');openInterpersonal();}else{log('时机未到，'+c.name+'尚踌躇（好感'+Math.round(c.fav)+'/60）。','bad');openCompanionMenu(idx);}}},
+      {t:'求结为道侣（需好感≥60）',act:()=>{ if(c.fav>=60){c.married=true; const rk=marriedRank(c.name); log('🌸 你与【'+c.name+'】结为第'+ordCn(rk)+'任道侣，山盟海誓，三界为证。','good');openInterpersonal();}else{log('时机未到，'+c.name+'尚踌躇（好感'+Math.round(c.fav)+'/60）。','bad');openCompanionMenu(idx);}}},
       {t:'赠以灵石（耗20下灵石，好感+12）',act:()=>{ if(S.spirit.下>=20){S.spirit.下-=20;c.fav+=12;log('你赠灵石二十，'+c.name+'浅笑收纳。','good');}else log('灵石不足，无以相赠。','bad'); openCompanionMenu(idx); }},
       {t:'赠以礼物（好感大增）',act:()=>openGiftMenu(idx)},
       {t:'相伴游历（好感+8~12）',act:()=>{c.fav+=rnd(8,12);log('你们把酒言欢，情意更浓（好感'+Math.round(c.fav)+'）。','good');openCompanionMenu(idx);}},
@@ -2440,8 +2443,8 @@ function openFamily(){
   let h='<h2 class="seal">🏠 家族</h2>';
   if(S.family){ h+='<div class="mtip">—— 长辈 ——</div>'; S.family.members.forEach(m=>{ h+='<div class="small">'+m.rel+'·'+m.name+(m.bg?'（'+m.bg+'）':'')+'</div>'; }); }
   const _famc=S.companions.filter(c=>c.married);
-  if(_famc.length){ h+='<div class="mtip">—— 道侣（'+_famc.length+' 位） ——</div>'; _famc.forEach(c=>{ h+='<div class="small">'+c.name+'（'+c.ident+'·好感'+Math.round(c.fav)+'·已结道侣）'+(c.bg?'　身世：'+c.bg:'')+'</div>'; }); }
-  if(S.后代&&S.后代.length){ h+='<div class="mtip">—— 后裔（指定「继承灵石」者，离世后可得遗泽；传承功法圆满可亲传） ——</div>'; S.后代.forEach((c,i)=>{ const inh=(S.inheritHeir===i); const canPass=inheritGongsFull().length>0; h+='<div class="shopitem"><span>'+c.name+'（'+c.sex+'·'+c.root+'灵根·'+c.rootq+'）'+(c.parent?'　（与【'+c.parent+'】所出）':'')+(inh?'　✔继承灵石':'')+(c.inheritGong?'　已传功【'+c.inheritGong+'】':'')+(c.pet?'　灵宠'+c.pet:'')+'</span><button class="btn sm" onclick="setHeir('+i+')">'+(inh?'取消继承':'指定继承')+'</button>'+(canPass?'<button class="btn sm ghost" onclick="passGongToHeir('+i+')">传功</button>':'')+'</div>'; }); }
+  if(_famc.length){ h+='<div class="mtip">—— 道侣（'+_famc.length+' 位） ——</div>'; _famc.forEach((c,mi)=>{ h+='<div class="small">第'+ordCn(mi+1)+'任道侣 · '+c.name+'（'+c.ident+'·好感'+Math.round(c.fav)+'）'+(c.bg?'　身世：'+c.bg:'')+'</div>'; }); }
+  if(S.后代&&S.后代.length){ h+='<div class="mtip">—— 后裔（指定「继承灵石」者，离世后可得遗泽；传承功法圆满可亲传） ——</div>'; S.后代.forEach((c,i)=>{ const inh=(S.inheritHeir===i); const canPass=inheritGongsFull().length>0; const rk=c.parent?marriedRank(c.parent):0; h+='<div class="shopitem"><span>'+c.name+'（'+c.sex+'·'+c.root+'灵根·'+c.rootq+'）'+(c.parent?('　（与'+(rk?('第'+ordCn(rk)+'任道侣·'):'')+'【'+c.parent+'】所出）'):'')+(inh?'　✔继承灵石':'')+(c.inheritGong?'　已传功【'+c.inheritGong+'】':'')+(c.pet?'　灵宠'+c.pet:'')+'</span><button class="btn sm" onclick="setHeir('+i+')">'+(inh?'取消继承':'指定继承')+'</button>'+(canPass?'<button class="btn sm ghost" onclick="passGongToHeir('+i+')">传功</button>':'')+'</div>'; }); }
   else h+='<div class="small">（尚无后裔）</div>';
   if(S.pets&&S.pets.length&&S.后代&&S.后代.length){ h+='<div class="mtip">—— 将灵宠赐予后裔相伴 ——</div>'; S.pets.forEach((p,pi)=>{ h+='<div class="shopitem"><span>灵宠'+p.name+' →</span>'+S.后代.map((c,i)=>'<button class="btn sm ghost" onclick="givePet('+pi+','+i+')">'+c.name+'</button>').join(' ')+'</div>'; }); }
   else h+='<div class="small">（需同时拥有灵宠与后裔，方可赐予）</div>';
