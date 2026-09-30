@@ -460,7 +460,7 @@ const SAVE_KEY = 'xiuxian_slot_';   // + 档位编号（1..3）
 const RECALL_KEY = 'xiuxian_recall';
 let CUR_SLOT = 1;
 let CREATE_MODE = 'detail';   // 'detail' 详细创建 / 'quick' 快速开局
-const GAME_VER = '1.9';       // 当前版本号（每次大改请同步更新，并归档旧版本）
+const GAME_VER = '1.10';      // 当前版本号（每次大改请同步更新，并归档旧版本）
 const ADULT_AGE = 16;         // 及冠之年：未满此岁为「幼年」，不可远行/采药/争斗/谈情
 document.getElementById('verLine').textContent =
   '当前版本 V' + GAME_VER + ' · 鸿蒙初判，盘古开天。三界分立已万年，而你的故事，才刚刚开始。';
@@ -572,6 +572,7 @@ function startGame(){
     weather:'晴', status:[], fame:0,
     pets:[], inheritHeir:null,   // V1.6：灵宠 / 指定继承灵石之后裔
     companions:[], friends:[], jealousy:null,  // V1.9：多线伴侣（道侣可并行攻略）/ 知己好友 / 争风吃醋标记
+    fortuneLog:[],   // V1.10：一生机缘记录（用于回忆录分类展示）
   };
   // 加入初始丹药
   wp.forEach(w=>{ const [n,c]=w.split('×'); S.bag[n]=(S.bag[n]||0)+(+c||1); });
@@ -819,6 +820,7 @@ function advanceTime(shichen){
     if(S.month>12){ S.month=1; S.year++;
       if(S.age>=ADULT_AGE){ S.age++; log('🕰 又是一年春去秋来，你已 '+S.age+' 岁。','sys'); }
       sectYearTick();   // V1.8：宗门每年结算（消耗/招收/核心弟子采办）
+      fameForManyCompanions();   // V1.10：道侣过多则声望逐年下滑
     }
     }
   }
@@ -1271,12 +1273,13 @@ function huntResolve(b){
 }
 
 /* ===================== 机缘 ===================== */
+function logFortune(t){ if(!S.fortuneLog) S.fortuneLog=[]; S.fortuneLog.push(t); if(S.fortuneLog.length>40) S.fortuneLog=S.fortuneLog.slice(-40); }   // V1.10：一生机缘记存（回忆录用）
 function smallFortune(){
   const r=Math.random();
   if(S.ach) S.ach.fortunes++;
-  if(r<0.4){ const g=rnd(5,30); S.gold+=g; log('路遇落难商队，你拾得遗落的金银 '+g+' 两。','good'); }
-  else if(r<0.7){ const n=pick(LOCATIONS[S.loc].herbs||['聚气草']); S.bag[n]=(S.bag[n]||0)+1; log('草丛石缝间忽现灵光，你寻得【'+n+'】一株。','good'); }
-  else { const e=rnd(1,3); S.spirit.下+=e; log('你在溪畔洗漱，竟从沙中淘出下品灵石 '+e+' 枚。','good'); }
+  if(r<0.4){ const g=rnd(5,30); S.gold+=g; log('路遇落难商队，你拾得遗落的金银 '+g+' 两。','good'); logFortune('小机缘·拾遗金 '+g+' 两'); }
+  else if(r<0.7){ const n=pick(LOCATIONS[S.loc].herbs||['聚气草']); S.bag[n]=(S.bag[n]||0)+1; log('草丛石缝间忽现灵光，你寻得【'+n+'】一株。','good'); logFortune('小机缘·得【'+n+'】'); }
+  else { const e=rnd(1,3); S.spirit.下+=e; log('你在溪畔洗漱，竟从沙中淘出下品灵石 '+e+' 枚。','good'); logFortune('小机缘·淘得下品灵石 '+e+' 枚'); }
   renderAll(); defaultChoices();
 }
 function bigFortune(){
@@ -1286,11 +1289,14 @@ function bigFortune(){
     if(Math.random()<0.35) g=pick(INHERIT_GONGS);
     else g=pick(['太玄经','九转玄功','磐石诀','御剑斩','困仙阵','五行法术','雷符爆']);
     learnGong(g);
-    log((GONGS[g]&&GONGS[g].tier==='传承'?'🌟🌟 大机缘！你于残碑古洞中窥见失传绝学残篇，竟悟得传承功法【'+g+'】之妙！':'🌟 大机缘！你于残碑古洞中窥见无上心法残篇，竟悟得【'+g+'】之妙，功法更进一层！'),'good');
+    const inherit = (GONGS[g]&&GONGS[g].tier==='传承');
+    log((inherit?'🌟🌟 大机缘！你于残碑古洞中窥见失传绝学残篇，竟悟得传承功法【'+g+'】之妙！':'🌟 大机缘！你于残碑古洞中窥见无上心法残篇，竟悟得【'+g+'】之妙，功法更进一层！'),'good');
+    logFortune((inherit?'大机缘·习传承功法【':'大机缘·习【')+g+'】');
   } else {
     const pool=['紫金参','万年灵芝','九叶金莲','冰心莲','渡厄莲'];
     const n=pick(pool.filter(x=>HERBS[x])); S.bag[n]=(S.bag[n]||0)+1;
     log('🌟 大机缘！你误入一处隐秘洞天，得遇传说级灵物【'+n+'】！','good');
+    logFortune('大机缘·得传说灵物【'+n+'】');
   }
   renderAll(); defaultChoices();
 }
@@ -1301,12 +1307,15 @@ function epicFortune(){
   if(roll<0.5){
     const g=pick(INHERIT_GONGS.concat(['太玄经','九转玄功','磐石诀'])); learnGong(g);
     log('🌟🌟 <b>大气运·仙缘！</b>你于古洞石壁窥见无上心法，一朝顿悟，习得【'+g+'】！','good');
+    logFortune('大气运·仙缘·习【'+g+'】');
   } else if(roll<0.8){
     const n=pick(['紫金参','万年灵芝','九叶金莲','冰心莲','渡厄莲'].filter(x=>HERBS[x])); S.bag[n]=(S.bag[n]||0)+1;
     log('🌟🌟 <b>大气运·洞天！</b>你误入隐秘福地，得遇传说灵物【'+n+'】！','good');
+    logFortune('大气运·洞天·得【'+n+'】');
   } else {
     const up=rnd(5,20), ji=rnd(1,3); S.spirit.上+=up; S.spirit.极+=ji;
     log('🌟🌟 <b>大气运·灵脉！</b>你寻得微型灵脉，采得上品灵石 '+up+'、极品灵石 '+ji+'！','good');
+    logFortune('大气运·灵脉·上品'+up+'/极品'+ji);
   }
   renderAll(); defaultChoices();
 }
@@ -1622,11 +1631,11 @@ function endLife(reason){
 }
 
 function saveRecall(reason){
-  const recall = loadRecall();
+  let recall = loadRecall();
   let highlights=[];
   try{
     const lines = (logEl && logEl.querySelectorAll) ? logEl.querySelectorAll('.line') : [];
-    for(let i=lines.length-1; i>=0 && highlights.length<8; i--){
+    for(let i=lines.length-1; i>=0 && highlights.length<30; i--){   // V1.10：放宽「光辉时刻」上限（原仅 8 条）
       const t=lines[i].textContent, c=(lines[i].className||'');
       if(c.indexOf('good')>=0 || c.indexOf('ev')>=0) highlights.unshift('· '+t);
     }
@@ -1639,13 +1648,18 @@ function saveRecall(reason){
     ach: S.ach?JSON.parse(JSON.stringify(S.ach)):{},
     end: reason, heir: (S.后代&&S.后代.length>0),
     heirName: (S.后代&&S.后代.length>0)?S.后代[S.后代.length-1].name:null,
-    heirs: (S.后代||[]).map(c=>({name:c.name, sex:c.sex||'男', root:c.root||S.root, rootq:c.rootq||S.rootq, inheritGong:c.inheritGong})),
+    heirs: (S.后代||[]).map(c=>({name:c.name, sex:c.sex||'男', root:c.root||S.root, rootq:c.rootq||S.rootq, inheritGong:c.inheritGong, parent:c.parent})),
     inherit: (function(){ const heirGongs=(S.后代||[]).filter(c=>c.inheritGong).map(c=>c.inheritGong); return { spirit:(S.inheritHeir!=null?Math.floor(S.spirit.下):Math.floor(S.spirit.下/2)), weapon:S.weapon, armor:S.armor, wp:(S.wp||[]).slice().concat(heirGongs), gold:Math.floor(S.gold/2) }; })(),
     fame: S.fame, gold: S.gold, inherits: (S.inherit||0),
+    gongs: (S.wp||[]).slice(),   // V1.10：一生所习功法
+    sect: (S.sect?{name:S.sect.name, level:S.sect.level, disciples:S.sect.disciples.length}:null),   // V1.10：开宗立派
+    fortunes: (S.fortuneLog||[]).slice(),   // V1.10：一生机缘
     victory: (reason==='飞升上界'),
     highlights, time: S.year+'年'
   };
+  e.title = ascTitle(e);   // V1.10：依一生成就评定称号
   recall.push(e);
+  if(recall.length>100) recall = recall.slice(-100);   // V1.10：防止回忆录无限膨胀撑爆存储
   try{ localStorage.setItem(RECALL_KEY, JSON.stringify(recall)); }catch(_){}
   return e;
 }
@@ -1960,6 +1974,7 @@ function migrateSave(){
   S.companion = undefined; delete S.companion;
   if(!S.friends) S.friends=[];
   if(S.jealousy===undefined) S.jealousy=null;
+  if(!S.fortuneLog || !Array.isArray(S.fortuneLog)) S.fortuneLog=[];   // V1.10：兼容旧档
 }
 function loadGame(){
   const d=localStorage.getItem(SAVE_KEY+CUR_SLOT);
@@ -2042,6 +2057,16 @@ function genCandidate(){
 }
 // V1.9 多线伴侣辅助
 function marriedCompanions(){ return (S.companions||[]).filter(c=>c.married); }
+// V1.10：道侣过多则风评受损，声望逐年下滑（每超出 1 位，每年 -5 声望）
+function fameForManyCompanions(){
+  const mc = marriedCompanions().length;
+  if(mc > 3){
+    const excess = mc - 3;
+    const pen = 5 * excess;
+    S.fame = Math.max(0, S.fame - pen);
+    log('⚠ 你道侣过多（已结'+mc+'位），风流之名渐成滥情之讥，声望 -'+pen+'。','bad');
+  }
+}
 function pursuingCount(){ return (S.companions||[]).filter(c=>!c.married).length; }
 function findCompanion(name){ return (S.companions||[]).find(c=>c.name===name); }
 function removeCompanion(c){ const i=S.companions.indexOf(c); if(i>=0) S.companions.splice(i,1); }
@@ -2083,7 +2108,7 @@ function openCompanionMenu(idx){
   if(!c.married){
     log('你与【'+c.name+'】（'+c.sex+'·'+c.ident+'·'+c.trait+'）情谊日笃，好感 '+Math.round(c.fav)+'。','sys');
     setChoices([
-      {t:'求结为道侣（需好感≥60）',act:()=>{ if(c.fav>=60){c.married=true; const rk=marriedRank(c.name); log('🌸 你与【'+c.name+'】结为第'+ordCn(rk)+'任道侣，山盟海誓，三界为证。','good');openInterpersonal();}else{log('时机未到，'+c.name+'尚踌躇（好感'+Math.round(c.fav)+'/60）。','bad');openCompanionMenu(idx);}}},
+      {t:'求结为道侣（需好感≥60）',act:()=>{ if(c.fav>=60){c.married=true; const rk=marriedRank(c.name); log('🌸 你与【'+c.name+'】结为第'+ordCn(rk)+'任道侣，山盟海誓，三界为证。','good'); if(marriedCompanions().length>3){ const pen=5*(marriedCompanions().length-3); S.fame=Math.max(0,S.fame-pen); log('⚠ 道侣渐多（已结'+marriedCompanions().length+'位），三界闲言四起，声望 -'+pen+'。','bad'); } openInterpersonal();}else{log('时机未到，'+c.name+'尚踌躇（好感'+Math.round(c.fav)+'/60）。','bad');openCompanionMenu(idx);}}},
       {t:'赠以灵石（耗20下灵石，好感+12）',act:()=>{ if(S.spirit.下>=20){S.spirit.下-=20;c.fav+=12;log('你赠灵石二十，'+c.name+'浅笑收纳。','good');}else log('灵石不足，无以相赠。','bad'); openCompanionMenu(idx); }},
       {t:'赠以礼物（好感大增）',act:()=>openGiftMenu(idx)},
       {t:'相伴游历（好感+8~12）',act:()=>{c.fav+=rnd(8,12);log('你们把酒言欢，情意更浓（好感'+Math.round(c.fav)+'）。','good');openCompanionMenu(idx);}},
@@ -2240,12 +2265,16 @@ function openRecall(){
   recall.slice().reverse().forEach(e=>{
     h+='<div class="frame" style="padding:10px;margin:8px 0">';
     h+='<div class="seal">'+e.name+'（'+e.sex+'·'+e.realmName+'）— '+e.end+'</div>';
-    h+='<div class="small">出身'+e.origin+'，灵根'+e.root+'('+e.rootq+')，主修'+e.prof+'，享寿'+e.age+'载</div>';
+    h+='<div class="small">出身'+e.origin+'，灵根'+e.root+'('+e.rootq+')，主修'+e.prof+'，享寿'+e.age+'载　声望'+(e.fame||0)+'</div>';
     h+='<div class="small">主要成就：斩敌'+(e.ach.slain||0)+' · 采药'+(e.ach.herbs||0)+' · 突破'+(e.ach.breaks||0)+' · 奇缘'+(e.ach.fortunes||0)+' · 炼丹'+(e.ach.pills||0)+' · 夺魁'+(e.ach.arena||0)+' · 猎兽'+(e.ach.hunt||0)+(e.ach.heir?' · 开枝散叶':'')+(e.ach.companion?' · 得遇道侣':'')+'</div>';
+    if(e.title) h+='<div class="small" style="color:var(--seal)">尊号：'+e.title+(e.victory?' · 飞升成仙':'')+(e.inherits?(' · 传承'+e.inherits+'门'):'')+'</div>';
+    if(e.sect) h+='<div class="small">⚑ 立派「'+e.sect.name+'」（Lv'+e.sect.level+'，门人'+e.sect.disciples+' 名）</div>';
+    if(e.gongs&&e.gongs.length){ h+='<div class="mtip">一生功法（'+(e.gongs.length)+' 门）：</div><div class="small">'+e.gongs.join('、')+'</div>'; }
+    if(e.fortunes&&e.fortunes.length){ h+='<div class="mtip">一生机缘（'+(e.fortunes.length)+' 则）：</div>'; e.fortunes.forEach(x=>h+='<div class="small">· '+x+'</div>'); }
     if(e.highlights&&e.highlights.length){ h+='<div class="mtip">光辉时刻：</div>'; e.highlights.forEach(x=>h+='<div class="small">'+x+'</div>'); }
     if(e.heir){
       const hs=(e.heirs&&e.heirs.length)?e.heirs:[{name:e.heirName,sex:'?',root:e.root,rootq:e.rootq}];
-      h+='<div class="small" style="color:var(--seal)">❖ 留有后裔 '+hs.length+' 名：'+hs.map(x=>x.name+'（'+x.sex+'·'+x.root+'灵根）').join('、')+'，可于开局时择一「继承」。</div>';
+      h+='<div class="small" style="color:var(--seal)">❖ 留有后裔 '+hs.length+' 名：'+hs.map(x=>x.name+'（'+x.sex+'·'+x.root+'灵根'+(x.parent?('·与【'+x.parent+'】所出'):'')+'）').join('、')+'，可于开局时择一「继承」。</div>';
     }
     h+='</div>';
   });
@@ -2330,7 +2359,7 @@ function startInherit(id, idx){
     skills:[PROFS[prof].skill.name],
     loc:startLoc, year:1, month:1, day:1, shichen:5, weather:'晴', status:[],
     family:{bg:'你乃'+e.name+'之后裔，承其遗泽降生。', home:startLoc, surname:childName[0]||'某', members:[{rel:'先父',name:e.name}], visited:false},
-    companions:[], friends:[], jealousy:null, 后代:[], hasHeir:false,
+    companions:[], friends:[], jealousy:null, 后代:[], hasHeir:false, fortuneLog:[],
     ach:{slain:0,herbs:0,breaks:0,fortunes:0,realmMax:0,cities:{},companion:false,heir:false,pills:0,arena:0,hunt:0},
     orders:[], inheritedFrom:e.name, pets:[], inheritHeir:null
   };
@@ -2646,6 +2675,9 @@ function showAscend(e){
   h+='<div class="seal">尊号：'+ascTitle(e)+(overlord?' · 三界共主':'')+'</div>';
   h+='<div class="small">终焉境界：'+REALMS[e.realmMax].name+SUBNAME[0]+'　一世享寿 '+e.age+' 载　声望 '+(e.fame||0)+'　传承 '+(e.inherits||0)+' 门</div>';
   h+='<div class="small">主要成就：斩敌'+(e.ach.slain||0)+' · 采药'+(e.ach.herbs||0)+' · 突破'+(e.ach.breaks||0)+' · 奇缘'+(e.ach.fortunes||0)+' · 炼丹'+(e.ach.pills||0)+' · 夺魁'+(e.ach.arena||0)+' · 猎兽'+(e.ach.hunt||0)+(e.ach.heir?' · 开枝散叶':'')+(e.ach.companion?' · 得遇道侣':'')+'</div>';
+  if(e.sect) h+='<div class="small">⚑ 立派「'+e.sect.name+'」（Lv'+e.sect.level+'，门人'+e.sect.disciples+' 名）</div>';
+  if(e.gongs&&e.gongs.length) h+='<div class="small">一生功法（'+(e.gongs.length)+' 门）：'+e.gongs.join('、')+'</div>';
+  if(e.fortunes&&e.fortunes.length){ h+='<div class="mtip">一生机缘（'+(e.fortunes.length)+' 则）：</div>'; e.fortunes.forEach(x=>h+='<div class="small">· '+x+'</div>'); }
   h+='<div class="small">遗泽灵石：下 '+e.inherit.spirit+(S.inheritHeir!=null?'（已指定后裔全数继承）':'（后裔可得半数）')+'　传功 '+(e.inherit.wp&&e.inherit.wp.length?e.inherit.wp.join('、'):'无')+'</div>';
   if(e.highlights&&e.highlights.length){ h+='<div class="mtip">光辉时刻：</div>'; e.highlights.forEach(x=>h+='<div class="small">'+x+'</div>'); }
   h+='</div>';
